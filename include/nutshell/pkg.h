@@ -34,4 +34,9 @@ bool resolve_dependencies(const char* pkg_name);
 // Integrity verification
 bool verify_package_integrity(const PackageManifest* manifest);
 
+// Dynamic package installation functions
+bool install_package_from_path(const char *path);
+bool install_package_from_name(const char *name);
+bool register_package_commands(const char *pkg_dir, const char *pkg_name);
+
 #endif // NUTSHELL_PKG_H

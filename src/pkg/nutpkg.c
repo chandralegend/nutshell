@@ -51,6 +51,11 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
 static const char* PKG_CACHE_DIR = "/var/cache/nutshell/packages";
 
+// Update package registry URL to include our new example package
+#ifndef NUTPKG_REGISTRY
+#define NUTPKG_REGISTRY "https://raw.githubusercontent.com/chandralegend/nutshell/main/packages"
+#endif
+
 static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
     return fwrite(ptr, size, nmemb, stream);
 }
@@ -179,4 +184,11 @@ char* download_to_string(const char *url) {
     }
 
     return chunk.memory;
+}
+
+// Add function to list available packages
+void nutpkg_list_available() {
+    printf("Available packages:\n");
+    printf("- gitify: Interactive Git commit helper\n");
+    // Add more packages here as they become available
 }

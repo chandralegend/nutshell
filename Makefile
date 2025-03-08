@@ -40,7 +40,7 @@ TEST_SRC = $(wildcard tests/*.c)
 TEST_OBJ = $(TEST_SRC:.c=.o)
 TEST_BINS = $(TEST_SRC:.c=.test)
 
-.PHONY: all clean install install-user test
+.PHONY: all clean install install-user test test-pkg
 
 all: nutshell
 
@@ -75,11 +75,18 @@ install-user: nutshell
 	@echo "Make sure $(HOME)/bin is in your PATH variable."
 	@echo "You can add it by running: echo 'export PATH=\$$PATH:\$$HOME/bin' >> ~/.bashrc"
 
+# Standard test target
 test: $(TEST_BINS)
 	@for test in $(TEST_BINS); do \
 		echo "Running $$test..."; \
 		./$$test; \
 	done
+
+# Add a new target for package tests
+test-pkg: tests/test_pkg_install.test
+	@echo "Running package installation tests..."
+	@chmod +x scripts/run_pkg_test.sh
+	@./scripts/run_pkg_test.sh
 
 # Update the test build rule to exclude main.o
 tests/%.test: tests/%.o $(filter-out src/core/main.o, $(OBJ))

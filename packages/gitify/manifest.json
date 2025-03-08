@@ -1,0 +1,8 @@
+{
+  "name": "gitify",
+  "version": "1.0.0",
+  "description": "Interactive Git commit helper for Nutshell",
+  "author": "Nutshell Team",
+  "dependencies": [],
+  "sha256": "to_be_generated_after_script_is_created"
+}

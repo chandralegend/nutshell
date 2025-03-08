@@ -27,6 +27,8 @@ void handle_sigint(int sig) {
     rl_redisplay();
 }
 
+extern int install_pkg_command(int argc, char **argv);
+
 void shell_loop() {
     char *input;
     struct sigaction sa;
@@ -52,6 +54,7 @@ void shell_loop() {
             add_history(input);
             ParsedCommand *cmd = parse_command(input);
             if (cmd) {
+                // Remove this special handling - it's now in executor.c
                 execute_command(cmd);
                 free_parsed_command(cmd);
             }

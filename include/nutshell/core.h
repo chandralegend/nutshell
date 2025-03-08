@@ -46,4 +46,7 @@ void shell_loop();
 char *get_prompt();
 void handle_sigint(int sig);
 
+// Add to the function declarations section
+void load_packages_from_dir(const char *dir_path);
+
 #endif // NUTSHELL_CORE_H

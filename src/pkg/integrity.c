@@ -41,7 +41,8 @@ bool verify_package_integrity(const PackageManifest* manifest) {
 
     char hash_str[65];
     for(int i = 0; i < 32; i++) {
-        sprintf(hash_str + (i * 2), "%02x", hash[i]);
+        // Replace sprintf with snprintf to avoid deprecation warning
+        snprintf(hash_str + (i * 2), 3, "%02x", hash[i]);
     }
     hash_str[64] = '\0';
 

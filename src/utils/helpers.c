@@ -116,8 +116,15 @@ char *get_current_dir() {
     return cwd;
 }
 
+// Debug flag - set to 1 to enable debug output
+#define DEBUG_HELPERS 1
+
 bool sanitize_command(const char *cmd) {
     if (!cmd) return false;
+    
+    if (DEBUG_HELPERS) {
+        fprintf(stderr, "DEBUG: Sanitizing command: '%s'\n", cmd);
+    }
     
     // List of disallowed commands for security
     const char *blocked_commands[] = {
@@ -128,6 +135,9 @@ bool sanitize_command(const char *cmd) {
     // Check against blocked commands
     for (int i = 0; blocked_commands[i]; i++) {
         if (strcmp(cmd, blocked_commands[i]) == 0) {
+            if (DEBUG_HELPERS) {
+                fprintf(stderr, "DEBUG: Command '%s' blocked by security policy\n", cmd);
+            }
             return false;
         }
     }
