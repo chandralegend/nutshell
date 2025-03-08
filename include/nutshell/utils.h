@@ -15,6 +15,7 @@ char *expand_path(const char *path);
 // String utilities
 char **split_string(const char *input, const char *delim, int *count);
 char *trim_whitespace(char *str);
+char *str_replace(const char *str, const char *find, const char *replace);
 
 // Security utilities
 bool sanitize_command(const char *cmd);

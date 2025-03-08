@@ -1,0 +1,50 @@
+{
+  "name": "developer",
+  "description": "Developer theme with additional information",
+  "colors": {
+    "reset": "\u001b[0m",
+    "primary": "\u001b[1;35m",
+    "secondary": "\u001b[1;33m",
+    "error": "\u001b[1;31m",
+    "warning": "\u001b[0;33m",
+    "info": "\u001b[0;36m",
+    "success": "\u001b[0;32m"
+  },
+  "prompt": {
+    "left": {
+      "format": "{primary}{icon} {directory}{reset}",
+      "icon": "💻"
+    },
+    "right": {
+      "format": "{git_info}{python_env}"
+    },
+    "multiline": false,
+    "prompt_symbol": "→ ",
+    "prompt_symbol_color": "primary"
+  },
+  "segments": {
+    "git_info": {
+      "enabled": true,
+      "format": "{secondary}git:({branch}){dirty_flag}{reset} ",
+      "commands": {
+        "branch": "git branch --show-current 2>/dev/null",
+        "dirty_flag": "git status --porcelain 2>/dev/null | awk '{print \"*\"; exit}' || echo ''"
+      }
+    },
+    "python_env": {
+      "enabled": true,
+      "format": "{info}py:({env_name} {version}){reset} ",
+      "commands": {
+        "env_name": "echo $CONDA_DEFAULT_ENV || echo $VIRTUAL_ENV | sed 's|.*/||' 2>/dev/null",
+        "version": "python --version 2>&1 | cut -d' ' -f2 | cut -d. -f1,2"
+      }
+    },
+    "directory": {
+      "format": "{directory}{git_root}",
+      "commands": {
+        "directory": "pwd | sed \"s|$HOME|~|\"",
+        "git_root": "git rev-parse --show-toplevel 2>/dev/null | xargs basename 2>/dev/null | awk '{print \" @\" $0}' || echo ''"
+      }
+    }
+  }
+}

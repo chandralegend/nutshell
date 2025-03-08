@@ -7,8 +7,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Debug flag - set to 1 to enable debug output
-#define DEBUG_REGISTRY 1
+// Replace the debug flag with a macro that uses environment variable
+#define REGISTRY_DEBUG(fmt, ...) \
+    do { if (getenv("NUT_DEBUG_REGISTRY")) fprintf(stderr, "REGISTRY: " fmt "\n", ##__VA_ARGS__); } while(0)
 
 static CommandRegistry *registry = NULL;
 static const char* PACKAGES_DIR = "/.nutshell/packages";
@@ -29,29 +30,24 @@ void init_registry() {
     // Register the package installer command
     register_command("install-pkg", "install-pkg", true);
     
-    if (DEBUG_REGISTRY) {
-        fprintf(stderr, "DEBUG: Initialized registry with default commands\n");
-    }
+    // Register theme command
+    register_command("theme", "theme", true);
+    
+    REGISTRY_DEBUG("Initialized registry with default commands");
     
     // Load installed packages
     char home_path[256];
     char *home = getenv("HOME");
     if (home) {
         snprintf(home_path, sizeof(home_path), "%s%s", home, PACKAGES_DIR);
-        if (DEBUG_REGISTRY) {
-            fprintf(stderr, "DEBUG: Loading packages from user dir: %s\n", home_path);
-        }
+        REGISTRY_DEBUG("Loading packages from user dir: %s", home_path);
         load_packages_from_dir(home_path);
     } else {
-        if (DEBUG_REGISTRY) {
-            fprintf(stderr, "DEBUG: HOME environment variable not set\n");
-        }
+        REGISTRY_DEBUG("HOME environment variable not set");
     }
     
     // Also check system-wide packages if accessible
-    if (DEBUG_REGISTRY) {
-        fprintf(stderr, "DEBUG: Loading packages from system dir: /usr/local/nutshell/packages\n");
-    }
+    REGISTRY_DEBUG("Loading packages from system dir: /usr/local/nutshell/packages");
     load_packages_from_dir("/usr/local/nutshell/packages");
 }
 
@@ -99,33 +95,25 @@ void register_command(const char *unix_cmd, const char *nut_cmd, bool is_builtin
     cmd->nut_cmd = strdup(nut_cmd);
     cmd->is_builtin = is_builtin;
     
-    if (DEBUG_REGISTRY) {
-        fprintf(stderr, "DEBUG: Registered command: %s -> %s (builtin: %s)\n", 
-                nut_cmd, unix_cmd, is_builtin ? "yes" : "no");
-    }
+    REGISTRY_DEBUG("Registered command: %s -> %s (builtin: %s)", 
+            nut_cmd, unix_cmd, is_builtin ? "yes" : "no");
 }
 
 const CommandMapping *find_command(const char *input_cmd) {
-    if (DEBUG_REGISTRY) {
-        fprintf(stderr, "DEBUG: Looking for command: %s\n", input_cmd);
-    }
+    REGISTRY_DEBUG("Looking for command: %s", input_cmd);
     
     for (size_t i = 0; i < registry->count; i++) {
         if (strcmp(registry->commands[i].nut_cmd, input_cmd) == 0 ||
             strcmp(registry->commands[i].unix_cmd, input_cmd) == 0) {
             
-            if (DEBUG_REGISTRY) {
-                fprintf(stderr, "DEBUG: Found command: %s -> %s (builtin: %s)\n", 
-                        input_cmd, registry->commands[i].unix_cmd, 
-                        registry->commands[i].is_builtin ? "yes" : "no");
-            }
+            REGISTRY_DEBUG("Found command: %s -> %s (builtin: %s)", 
+                    input_cmd, registry->commands[i].unix_cmd, 
+                    registry->commands[i].is_builtin ? "yes" : "no");
             return &registry->commands[i];
         }
     }
     
-    if (DEBUG_REGISTRY) {
-        fprintf(stderr, "DEBUG: Command not found: %s\n", input_cmd);
-    }
+    REGISTRY_DEBUG("Command not found: %s", input_cmd);
     return NULL;
 }
 

@@ -40,7 +40,7 @@ TEST_SRC = $(wildcard tests/*.c)
 TEST_OBJ = $(TEST_SRC:.c=.o)
 TEST_BINS = $(TEST_SRC:.c=.test)
 
-.PHONY: all clean install install-user test test-pkg
+.PHONY: all clean install install-user test test-pkg test-theme release uninstall uninstall-user
 
 all: nutshell
 
@@ -75,6 +75,21 @@ install-user: nutshell
 	@echo "Make sure $(HOME)/bin is in your PATH variable."
 	@echo "You can add it by running: echo 'export PATH=\$$PATH:\$$HOME/bin' >> ~/.bashrc"
 
+# Uninstall system-wide installation (requires sudo)
+uninstall:
+	@echo "Uninstalling nutshell from system directories..."
+	@rm -f $(DESTDIR)/usr/local/bin/nutshell
+	@rm -rf $(DESTDIR)/usr/local/nutshell
+	@echo "Nutshell has been uninstalled from system directories."
+
+# Uninstall user-level installation
+uninstall-user:
+	@echo "Uninstalling nutshell from user directory..."
+	@rm -f $(HOME)/bin/nutshell
+	@rm -rf $(HOME)/.nutshell
+	@echo "Nutshell has been uninstalled from user directory."
+	@echo "You may want to remove ~/bin from your PATH if you don't use it for other programs."
+
 # Standard test target
 test: $(TEST_BINS)
 	@for test in $(TEST_BINS); do \
@@ -88,9 +103,21 @@ test-pkg: tests/test_pkg_install.test
 	@chmod +x scripts/run_pkg_test.sh
 	@./scripts/run_pkg_test.sh
 
+# Add a new target for theme tests
+test-theme: tests/test_theme.test
+	@echo "Running theme tests..."
+	@./tests/test_theme.test
+
 # Update the test build rule to exclude main.o
 tests/%.test: tests/%.o $(filter-out src/core/main.o, $(OBJ))
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+# Add a release target that calls the build script
+release:
+	@echo "Building release package..."
+	@chmod +x scripts/build_release.sh
+	@./scripts/build_release.sh $(VERSION)
+	@echo "Release build complete."
 
 clean:
 	rm -f $(OBJ) $(TEST_OBJ) $(TEST_BINS) nutshell

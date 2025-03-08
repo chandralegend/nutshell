@@ -1,5 +1,6 @@
 #include <nutshell/core.h>
 #include <nutshell/utils.h>
+#include <nutshell/theme.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

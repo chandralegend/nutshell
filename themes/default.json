@@ -1,0 +1,47 @@
+{
+  "name": "default",
+  "description": "Default Nutshell theme with nutshell icon",
+  "colors": {
+    "reset": "\u001b[0m",
+    "primary": "\u001b[1;32m",
+    "secondary": "\u001b[1;34m",
+    "error": "\u001b[1;31m",
+    "warning": "\u001b[1;33m",
+    "info": "\u001b[1;36m",
+    "success": "\u001b[1;32m"
+  },
+  "prompt": {
+    "left": {
+      "format": "{primary}{icon} {directory}{reset}",
+      "icon": "🥜"
+    },
+    "right": {
+      "format": "{git_branch}{python_env}"
+    },
+    "multiline": false,
+    "prompt_symbol": " ➜",
+    "prompt_symbol_color": "primary"
+  },
+  "segments": {
+    "git_branch": {
+      "enabled": true,
+      "format": "{secondary}git:({branch}){reset} ",
+      "commands": {
+        "branch": "git branch --show-current 2>/dev/null"
+      }
+    },
+    "python_env": {
+      "enabled": true,
+      "format": "{info}py:({env_name}){reset} ",
+      "commands": {
+        "env_name": "echo $CONDA_DEFAULT_ENV || echo $VIRTUAL_ENV | sed 's|.*/||' 2>/dev/null"
+      }
+    },
+    "directory": {
+      "format": "{directory}",
+      "commands": {
+        "directory": "pwd | sed \"s|$HOME|~|\""
+      }
+    }
+  }
+}

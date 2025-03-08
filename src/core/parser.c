@@ -3,8 +3,9 @@
 #include <string.h>
 #include <nutshell/utils.h>
 
-// Debug flag - set to 1 to enable debug output
-#define DEBUG_PARSER 1
+// Replace the debug flag with a macro that uses environment variable
+#define PARSER_DEBUG(fmt, ...) \
+    do { if (getenv("NUT_DEBUG_PARSER")) fprintf(stderr, "PARSER: " fmt "\n", ##__VA_ARGS__); } while(0)
 
 // Function prototype
 char* trim_whitespace(char* str);
@@ -12,9 +13,7 @@ char* trim_whitespace(char* str);
 ParsedCommand *parse_command(char *input) {
     if (!input) return NULL;
     
-    if (DEBUG_PARSER) {
-        fprintf(stderr, "DEBUG: Parsing command: '%s'\n", input);
-    }
+    PARSER_DEBUG("Parsing command: '%s'", input);
     
     // Make a copy of the input to avoid modifying the original
     char *input_copy = strdup(input);
@@ -22,14 +21,14 @@ ParsedCommand *parse_command(char *input) {
     
     input_copy = trim_whitespace(input_copy);
     if (strlen(input_copy) == 0) {
-        if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Empty command after trimming\n");
+        PARSER_DEBUG("Empty command after trimming");
         free(input_copy);
         return NULL;
     }
     
     ParsedCommand *cmd = calloc(1, sizeof(ParsedCommand));
     if (!cmd) {
-        if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Failed to allocate ParsedCommand\n");
+        PARSER_DEBUG("Failed to allocate ParsedCommand");
         free(input_copy);
         return NULL;
     }
@@ -37,7 +36,7 @@ ParsedCommand *parse_command(char *input) {
     // Use calloc to ensure all entries are initialized to NULL
     cmd->args = calloc(MAX_ARGS, sizeof(char *));
     if (!cmd->args) {
-        if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Failed to allocate args array\n");
+        PARSER_DEBUG("Failed to allocate args array");
         free(input_copy);
         free(cmd);
         return NULL;
@@ -54,25 +53,25 @@ ParsedCommand *parse_command(char *input) {
             token = strtok_r(NULL, " \t", &saveptr);
             if (token) {
                 cmd->input_file = strdup(token);
-                if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Input file: %s\n", cmd->input_file);
+                PARSER_DEBUG("Input file: %s", cmd->input_file);
             } else {
-                if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Missing input file after <\n");
+                PARSER_DEBUG("Missing input file after <");
             }
         } else if (strcmp(token, ">") == 0) {
             token = strtok_r(NULL, " \t", &saveptr);
             if (token) {
                 cmd->output_file = strdup(token);
-                if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Output file: %s\n", cmd->output_file);
+                PARSER_DEBUG("Output file: %s", cmd->output_file);
             } else {
-                if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Missing output file after >\n");
+                PARSER_DEBUG("Missing output file after >");
             }
         } else if (strcmp(token, "&") == 0) {
             cmd->background = true;
-            if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Background process\n");
+            PARSER_DEBUG("Background process");
         } else {
             // Regular argument
             cmd->args[arg_count] = strdup(token);
-            if (DEBUG_PARSER) fprintf(stderr, "DEBUG: Arg[%d] = '%s'\n", arg_count, cmd->args[arg_count]);
+            PARSER_DEBUG("Arg[%d] = '%s'", arg_count, cmd->args[arg_count]);
             arg_count++;
         }
         
@@ -83,9 +82,7 @@ ParsedCommand *parse_command(char *input) {
     // Ensure NULL termination
     cmd->args[arg_count] = NULL;
     
-    if (DEBUG_PARSER) {
-        fprintf(stderr, "DEBUG: Command parsed with %d arguments\n", arg_count);
-    }
+    PARSER_DEBUG("Command parsed with %d arguments", arg_count);
     
     free(input_copy);
     return cmd;

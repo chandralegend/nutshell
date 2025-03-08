@@ -28,122 +28,228 @@ nutshell/
 ├── Makefile
 └── README.md
 
-# Nutshell - A Modern Shell with Nut-themed Commands
+# Nutshell
 
-Nutshell is a modern shell environment that combines traditional Unix-like command syntax with friendly nut-themed aliases and powerful package management capabilities.
+Nutshell is an enhanced Unix shell that provides a simplified command language, package management, and AI-powered assistance.
 
 ## Features
 
-- Familiar Unix-like command syntax
-- Nut-themed command aliases (e.g., `peekaboo` for `ls`)
-- Package management with integrity verification
-- Input/output redirection
-- Background process handling
-- AI assistant integration (OpenAI)
-
-## Directory Structure
-
-```
-nutshell/
-├── src/
-│   ├── core/        # Main shell functionality
-│   ├── ai/          # AI integration components
-│   ├── pkg/         # Package management
-│   ├── utils/       # Utility functions
-│   └── plugins/     # Loadable plugins
-├── include/         # Header files
-├── lib/             # 3rd party libraries
-├── scripts/         # Build/install scripts
-├── packages/        # Local package cache
-├── tests/           # Test suite
-├── Makefile
-└── README.md
-```
+- Friendly command aliases (e.g., `peekaboo` for `ls`, `hop` for `cd`)
+- Built-in package management system
+- Dynamic package installation without rebuilding
+- Debug logging for development
+- Interactive Git commit helper (gitify package)
+- Shell command history
+- Redirection and background process support
 
 ## Installation
 
 ### Prerequisites
 
 - C compiler (clang or gcc)
-- libreadline
+- readline library
+- OpenSSL
 - libcurl
-- libjansson
-- libssl
+- Jansson (optional, for package management)
 
 ### Building from source
 
 ```bash
-# Clone the repository
-git clone https://github.com/nuttydev/nutshell.git
+git clone https://github.com/chandralegend/nutshell.git
 cd nutshell
-
-# Build
 make
+```
 
-# Install
+### Installing 
+
+#### System-wide installation (requires sudo)
+```bash
 sudo make install
+```
+
+#### User-level installation
+```bash
+make install-user
+```
+Then add `$HOME/bin` to your PATH if it's not already there:
+```bash
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc  # or ~/.zshrc or ~/.bash_profile
 ```
 
 ## Usage
 
-Start the shell by running:
+### Basic commands
 
-```bash
-nutshell
+Nutshell command | Unix equivalent | Description
+---------------- | --------------- | -----------
+`peekaboo`       | `ls`            | List directory contents
+`hop`            | `cd`            | Change directory
+`roast`          | `exit`          | Exit the shell
+
+### Running commands
+
+Commands work just like in a standard Unix shell:
+
 ```
-
-### Basic Commands
-
-- `peekaboo` (`ls`): List files in the current directory
-- `hop` (`cd`): Change directory
-- `roast` (`exit`): Exit the shell
+🥜 ~/projects ➜ peekaboo -la
+🥜 ~/projects ➜ hop nutshell
+🥜 ~/projects/nutshell ➜ command arg1 arg2
+```
 
 ### Package Management
 
-Nutshell uses a package system with `.nut` files:
+Nutshell has a built-in package system for extending functionality.
 
-```bash
-# Install a package
-nutpkg install nut-git
+#### Installing packages
 
-# List installed packages
-nutpkg list
-
-# Use a package command
-acorn "Initial commit"  # From nut-git, equivalent to `git commit -m "Initial commit"`
+```
+🥜 ~/projects ➜ install-pkg gitify
 ```
 
-## Development
+You can also install from a local directory:
 
-### Running tests
-
-```bash
-make test
+```
+🥜 ~/projects ➜ install-pkg /path/to/package
 ```
 
-### Creating Packages
+#### Using the gitify package
 
-Packages are defined in `.nut` files with the following structure:
+The gitify package provides an interactive Git commit helper:
+
+```
+🥜 ~/projects/my-git-repo ➜ gitify
+```
+
+Follow the prompts to stage files and create semantic commit messages.
+
+## Customizing Themes
+
+Nutshell comes with a customizable theme system:
+
+### Listing available themes
+
+```bash
+🥜 ~ ➜ theme
+```
+
+This will show all available themes, with the current theme marked with an asterisk (*).
+
+### Switching themes
+
+```bash
+🥜 ~ ➜ theme minimal
+```
+
+This will switch to the "minimal" theme.
+
+### Creating your own theme
+
+1. Create a new JSON file in `~/.nutshell/themes/` named `mytheme.json`
+2. Use the following template:
 
 ```json
 {
-  "name": "nut-example",
-  "version": "1.0.0",
-  "description": "Example package for Nutshell",
-  "commands": {
-    "nutcommand": "unix-command",
+  "name": "mytheme",
+  "description": "My custom theme",
+  "colors": {
+    "reset": "\u001b[0m",
+    "primary": "\u001b[1;35m",  // Purple
+    "secondary": "\u001b[1;33m", // Yellow
+    "error": "\u001b[1;31m",
+    "warning": "\u001b[0;33m",
+    "info": "\u001b[0;34m",
+    "success": "\u001b[0;32m"
   },
-  "dependencies": [
-    "nut-dependency"
-  ],
-  "author": "Your Name"
+  "prompt": {
+    "left": {
+      "format": "{primary}{icon} {directory}{reset} ",
+      "icon": "🌟"
+    },
+    "right": {
+      "format": "{git_branch}"
+    },
+    "multiline": false,
+    "prompt_symbol": "→ ",
+    "prompt_symbol_color": "primary"
+  },
+  "segments": {
+    "git_branch": {
+      "enabled": true,
+      "format": "{secondary}git:({branch}){reset} ",
+      "command": "git branch --show-current 2>/dev/null"
+    },
+    "directory": {
+      "format": "{directory}",
+      "command": "pwd | sed \"s|$HOME|~|\""
+    }
+  }
 }
+```
+
+3. Switch to your theme with `theme mytheme`
+
+## Debugging
+
+For development or troubleshooting, run the debug script:
+
+```bash
+./scripts/debug-nutshell.sh
+```
+
+This enables detailed logging of command parsing and execution.
+
+### Debug Flags
+
+Nutshell supports the following debug environment variables:
+
+- `NUT_DEBUG=1` - Enable general debug output
+- `NUT_DEBUG_THEME=1` - Enable theme system debugging
+- `NUT_DEBUG_PKG=1` - Enable package system debugging
+- `NUT_DEBUG_PARSER=1` - Enable command parser debugging
+- `NUT_DEBUG_EXEC=1` - Enable command execution debugging
+- `NUT_DEBUG_REGISTRY=1` - Enable command registry debugging
+
+Example:
+
+```bash
+# Run with theme debugging enabled
+NUT_DEBUG_THEME=1 ./nutshell
+
+# Run with all debugging enabled
+NUT_DEBUG=1 NUT_DEBUG_THEME=1 NUT_DEBUG_PARSER=1 NUT_DEBUG_EXEC=1 NUT_DEBUG_REGISTRY=1 ./nutshell
+```
+
+## Creating Packages
+
+Packages are directories containing:
+- `manifest.json`: Package metadata
+- `[package-name].sh`: Main executable script
+- Additional files as needed
+
+Example manifest.json:
+```json
+{
+  "name": "mypackage",
+  "version": "1.0.0",
+  "description": "My awesome package",
+  "author": "Your Name",
+  "dependencies": [],
+  "sha256": "checksum"
+}
+```
+
+Generate a checksum for your package with:
+```bash
+./scripts/generate_checksum.sh mypackage
+```
+
+## Testing
+
+```bash
+make test       # Run all tests
+make test-pkg   # Test package installation
 ```
 
 ## License
 
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+[MIT License](LICENSE)
