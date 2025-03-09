@@ -1,0 +1,45 @@
+name: Nutshell Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential clang libreadline-dev libcurl4-openssl-dev libjansson-dev libssl-dev jq
+    
+    - name: Create directories
+      run: |
+        mkdir -p ~/.nutshell/themes
+        mkdir -p ~/.nutshell/packages
+    
+    - name: Build project
+      run: make
+      
+    - name: Copy theme files for tests
+      run: |
+        cp themes/*.json ~/.nutshell/themes/
+        ls -la ~/.nutshell/themes/
+      
+    - name: Run tests
+      run: |
+        make test
+        
+    - name: Run theme JSON validation
+      run: |
+        chmod +x tests/test_theme_json.sh
+        ./tests/test_theme_json.sh
+      
+    - name: Report status
+      run: echo "All tests completed successfully!"

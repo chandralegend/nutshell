@@ -30,13 +30,6 @@
         "branch": "git branch --show-current 2>/dev/null"
       }
     },
-    "python_env": {
-      "enabled": true,
-      "format": "{info}py:({env_name}){reset} ",
-      "commands": {
-        "env_name": "echo $CONDA_DEFAULT_ENV || echo $VIRTUAL_ENV | sed 's|.*/||' 2>/dev/null"
-      }
-    },
     "directory": {
       "format": "{directory}",
       "commands": {

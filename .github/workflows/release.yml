@@ -1,0 +1,77 @@
+name: Nutshell Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.3)'
+        required: true
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Create Release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential clang libreadline-dev libcurl4-openssl-dev libjansson-dev libssl-dev
+    
+    - name: Set version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+        else
+          # Extract version from tag (remove leading 'v')
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        fi
+        echo "Version: ${{ env.VERSION }}"
+    
+    - name: Build release
+      run: |
+        ./scripts/build_release.sh ${{ env.VERSION }}
+    
+    - name: Run tests
+      run: make test
+      
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Nutshell ${{ env.VERSION }}
+        tag_name: v${{ env.VERSION }}
+        draft: false
+        prerelease: false
+        files: |
+          build/nutshell-${{ env.VERSION }}.tar.gz
+          build/nutshell-${{ env.VERSION }}.sha256
+        body: |
+          # Nutshell ${{ env.VERSION }}
+          
+          ## Installation
+          
+          ```bash
+          # Download and extract
+          tar -xzf nutshell-${{ env.VERSION }}.tar.gz
+          cd nutshell-${{ env.VERSION }}
+          
+          # Install for current user
+          ./install.sh --user
+          
+          # Or system-wide (requires sudo)
+          sudo ./install.sh
+          ```
+          
+          ## What's New
+          - See the [CHANGELOG.md](CHANGELOG.md) for details
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
