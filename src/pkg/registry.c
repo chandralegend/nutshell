@@ -58,10 +58,19 @@ void load_packages_from_dir(const char *dir_path) {
     
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR && 
-            strcmp(entry->d_name, ".") != 0 && 
-            strcmp(entry->d_name, "..") != 0) {
+        // Use stat instead of d_type which is more portable
+        char full_path[512];
+        struct stat st;
+        
+        // Skip . and .. entries
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
             
+        // Build the full path
+        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
+        
+        // Check if it's a directory using stat
+        if (stat(full_path, &st) == 0 && S_ISDIR(st.st_mode)) {
             register_package_commands(dir_path, entry->d_name);
         }
     }
