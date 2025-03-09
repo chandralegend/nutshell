@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include <nutshell/pkg.h>
 #include <openssl/evp.h>  // Use EVP interface instead of direct SHA256
 #include <stdio.h>

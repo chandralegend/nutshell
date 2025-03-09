@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include <nutshell/theme.h>
 #include <jansson.h>
 #include <stdio.h>
@@ -5,6 +8,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/stat.h>  // Add this include for struct stat, stat() function, and S_ISREG macro
 
 // Add this helper macro at the top of the file
 #define THEME_DEBUG(fmt, ...) \
@@ -934,7 +938,17 @@ int theme_command(int argc, char **argv) {
             dir = opendir(themes_dir);
             if (dir) {
                 while ((ent = readdir(dir)) != NULL) {
-                    if (ent->d_type == DT_REG && strstr(ent->d_name, ".json")) {
+                    // Skip . and .. entries
+                    if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                        continue;
+                        
+                    // Build the full path
+                    char full_path[512];
+                    struct stat st;
+                    snprintf(full_path, sizeof(full_path), "%s/%s", themes_dir, ent->d_name);
+                    
+                    // Check if it's a regular file with .json extension
+                    if (stat(full_path, &st) == 0 && S_ISREG(st.st_mode) && strstr(ent->d_name, ".json")) {
                         // Remove .json extension
                         char theme_name[128];
                         strncpy(theme_name, ent->d_name, sizeof(theme_name));
@@ -957,7 +971,17 @@ int theme_command(int argc, char **argv) {
         dir = opendir("./themes");
         if (dir) {
             while ((ent = readdir(dir)) != NULL) {
-                if (ent->d_type == DT_REG && strstr(ent->d_name, ".json")) {
+                // Skip . and .. entries
+                if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                    continue;
+                    
+                // Build the full path
+                char full_path[512];
+                struct stat st;
+                snprintf(full_path, sizeof(full_path), "./themes/%s", ent->d_name);
+                
+                // Check if it's a regular file with .json extension
+                if (stat(full_path, &st) == 0 && S_ISREG(st.st_mode) && strstr(ent->d_name, ".json")) {
                     // Remove .json extension
                     char theme_name[128];
                     strncpy(theme_name, ent->d_name, sizeof(theme_name));

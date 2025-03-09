@@ -1,4 +1,6 @@
-// src/utils/security.c
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include <nutshell/utils.h>
 #include <nutshell/pkg.h>
 #include <stdio.h>
