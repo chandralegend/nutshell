@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
 #include <nutshell/pkg.h>
 #include <curl/curl.h>
 // Try to find jansson.h in various locations
@@ -17,7 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h>  // Make sure string.h is included
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -45,7 +47,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
     memcpy(&(mem->memory[mem->size]), contents, real_size);
     mem->size += real_size;
     mem->memory[mem->size] = 0;
-    
+       
     return real_size;
 }
 
@@ -137,7 +139,7 @@ bool load_manifest(const char* pkg_name, PackageManifest* manifest) {
     json_error_t error;
     json_t *root = json_loads(json_str, 0, &error);
     free(json_str);
-    
+        
     if(!root) return false;
 
     // Parse JSON manifest
