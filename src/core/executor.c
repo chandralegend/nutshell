@@ -18,6 +18,11 @@
 // Forward declarations
 extern int install_pkg_command(int argc, char **argv);
 
+// External declarations for AI commands
+extern int set_api_key_command(int argc, char **argv);
+extern int ask_ai_command(int argc, char **argv);
+extern int explain_command(int argc, char **argv);
+
 static void handle_redirection(ParsedCommand *cmd);
 
 // Debug helper function
@@ -59,6 +64,28 @@ void execute_command(ParsedCommand *cmd) {
         int argc = 0;
         while (cmd->args[argc]) argc++;
         install_pkg_command(argc, cmd->args);
+        return;
+    }
+
+    // Handle AI commands
+    if (strcmp(cmd->args[0], "set-api-key") == 0) {
+        int argc = 0;
+        while (cmd->args[argc]) argc++;
+        set_api_key_command(argc, cmd->args);
+        return;
+    }
+    
+    if (strcmp(cmd->args[0], "ask") == 0) {
+        int argc = 0;
+        while (cmd->args[argc]) argc++;
+        ask_ai_command(argc, cmd->args);
+        return;
+    }
+    
+    if (strcmp(cmd->args[0], "explain") == 0) {
+        int argc = 0;
+        while (cmd->args[argc]) argc++;
+        explain_command(argc, cmd->args);
         return;
     }
 

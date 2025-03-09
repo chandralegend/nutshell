@@ -43,6 +43,7 @@ Nutshell is an enhanced Unix shell that provides a simplified command language, 
 - Interactive Git commit helper (gitify package)
 - Shell command history
 - Redirection and background process support
+- AI-powered command assistance (NEW)
 
 ## Installation
 
@@ -98,11 +99,63 @@ Commands work just like in a standard Unix shell:
 🥜 ~/projects/nutshell ➜ command arg1 arg2
 ```
 
-### Package Management
+## AI Command Assistance
+
+Nutshell includes AI features to help with shell commands:
+
+### Setup
+
+1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/)
+2. Set your API key:
+   ```
+   🥜 ~ ➜ set-api-key YOUR_API_KEY
+   ```
+   
+   Alternatively, set it as an environment variable:
+   ```bash
+   export OPENAI_API_KEY=your_api_key
+   ```
+
+### AI Commands
+
+#### Ask for a command
+
+Convert natural language to shell commands:
+
+```
+🥜 ~ ➜ ask find all PDF files modified in the last week
+```
+
+The shell will return the proper command and ask if you want to execute it.
+
+#### Explain commands
+
+Get explanations for complex commands:
+
+```
+🥜 ~ ➜ explain find . -name "*.txt" -mtime -7 -exec grep -l "important" {} \;
+```
+
+### Debug Options
+
+Enable AI debugging with environment variables:
+
+```bash
+# Run with AI debugging enabled
+NUT_DEBUG_AI=1 ./nutshell
+
+# Run with verbose API response logging
+NUT_DEBUG_AI=1 NUT_DEBUG_AI_VERBOSE=1 ./nutshell
+
+# Use the debug script
+./scripts/debug_ai.sh
+```
+
+## Package Management
 
 Nutshell has a built-in package system for extending functionality.
 
-#### Installing packages
+### Installing packages
 
 ```
 🥜 ~/projects ➜ install-pkg gitify
@@ -114,7 +167,7 @@ You can also install from a local directory:
 🥜 ~/projects ➜ install-pkg /path/to/package
 ```
 
-#### Using the gitify package
+### Using the gitify package
 
 The gitify package provides an interactive Git commit helper:
 
@@ -210,6 +263,9 @@ Nutshell supports the following debug environment variables:
 - `NUT_DEBUG_PARSER=1` - Enable command parser debugging
 - `NUT_DEBUG_EXEC=1` - Enable command execution debugging
 - `NUT_DEBUG_REGISTRY=1` - Enable command registry debugging
+- `NUT_DEBUG_AI=1` - Enable AI integration debugging
+- `NUT_DEBUG_AI_SHELL=1` - Enable AI shell integration debugging
+- `NUT_DEBUG_AI_VERBOSE=1` - Enable verbose API response logging
 
 Example:
 
@@ -250,6 +306,7 @@ Generate a checksum for your package with:
 ```bash
 make test       # Run all tests
 make test-pkg   # Test package installation
+make test-ai    # Test AI integration
 ```
 
 ## License

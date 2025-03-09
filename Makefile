@@ -40,7 +40,7 @@ TEST_SRC = $(wildcard tests/*.c)
 TEST_OBJ = $(TEST_SRC:.c=.o)
 TEST_BINS = $(TEST_SRC:.c=.test)
 
-.PHONY: all clean install install-user test test-pkg test-theme release uninstall uninstall-user
+.PHONY: all clean install install-user test test-pkg test-theme test-ai release uninstall uninstall-user
 
 all: nutshell
 
@@ -107,6 +107,14 @@ test-pkg: tests/test_pkg_install.test
 test-theme: tests/test_theme.test
 	@echo "Running theme tests..."
 	@./tests/test_theme.test
+
+# Add a new target for AI tests
+test-ai: tests/test_ai_integration.test tests/test_openai_commands.test tests/test_ai_shell_integration.test
+	@echo "Running AI integration tests..."
+	@./tests/test_ai_integration.test
+	@./tests/test_openai_commands.test
+	@./tests/test_ai_shell_integration.test
+	@echo "All AI tests completed!"
 
 # Update the test build rule to exclude main.o
 tests/%.test: tests/%.o $(filter-out src/core/main.o, $(OBJ))
