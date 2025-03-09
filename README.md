@@ -1,3 +1,4 @@
+```bash
 nutshell/
 ├── src/
 │   ├── core/
@@ -27,6 +28,7 @@ nutshell/
 ├── tests/                   # Test suite
 ├── Makefile
 └── README.md
+```
 
 # Nutshell
 
