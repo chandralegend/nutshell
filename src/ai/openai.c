@@ -330,10 +330,13 @@ static char *request_completion(const char *system_prompt, const char *user_prom
 // Function pointers for testing
 typedef char* (*NlToCommandFunc)(const char*);
 typedef char* (*ExplainCommandFunc)(const char*);
+typedef char* (*SuggestFixFunc)(const char*, const char*, int);
 
 // Default to the real implementations
 static NlToCommandFunc nl_to_command_impl = NULL;
 static ExplainCommandFunc explain_command_impl = NULL;
+// Remove static to make it accessible to tests
+SuggestFixFunc suggest_fix_impl = NULL;
 
 // The actual implementation functions
 char* real_nl_to_command(const char* natural_language_query) {
@@ -362,6 +365,32 @@ char* real_explain_command_ai(const char* command) {
     return request_completion(system_prompt, command);
 }
 
+// Define this function early so it can be referenced by set_ai_mock_functions
+char *real_suggest_fix(const char *command, const char *error, int exit_status) {
+    // System prompt for fix suggestions
+    const char *system_prompt = 
+        "You are a shell command assistant helping fix errors. The user has run a command "
+        "that produced an error. Please suggest a fix or alternative command.\n"
+        "Rules:\n"
+        "1. Analyze why the command failed and provide a brief explanation\n"
+        "2. Suggest a corrected command that will likely work\n"
+        "3. If there are multiple possible fixes, list the most likely one first\n"
+        "4. Use Nutshell commands where appropriate (peekaboo for ls, hop for cd, etc.)\n"
+        "5. Format your response with sections: 'Explanation:', 'Suggested Fix:', followed by 'Corrected command:' on a new line\n"
+        "6. Be helpful and educational in your response";
+    
+    // Create user prompt with context
+    char user_prompt[4096];
+    snprintf(user_prompt, sizeof(user_prompt),
+             "Command: %s\nOutput/Error: %s\nExit status: %d\n"
+             "Please suggest how to fix this command. If the command has a typo or common error, "
+             "show the corrected version. Format your response with 'Explanation:' followed by "
+             "'Corrected command:' sections.",
+             command, error && strlen(error) > 0 ? error : "No error output available", exit_status);
+    
+    return request_completion(system_prompt, user_prompt);
+}
+
 // Public API functions that use the function pointers
 char* nl_to_command(const char* natural_language_query) {
     if (nl_to_command_impl == NULL) {
@@ -377,10 +406,19 @@ char* explain_command_ai(const char* command) {
     return explain_command_impl(command);
 }
 
-// Function to set mock implementations for testing
+// Function to set mock implementations for testing - modified to match header
 void set_ai_mock_functions(NlToCommandFunc nl_func, ExplainCommandFunc explain_func) {
     nl_to_command_impl = nl_func ? nl_func : real_nl_to_command;
     explain_command_impl = explain_func ? explain_func : real_explain_command_ai;
+    // Remove the third parameter handling
+}
+
+// Public wrapper function
+char *suggest_fix(const char *command, const char *error, int exit_status) {
+    if (suggest_fix_impl == NULL) {
+        suggest_fix_impl = real_suggest_fix;
+    }
+    return suggest_fix_impl(command, error, exit_status);
 }
 
 // Suggest commands based on context
@@ -516,4 +554,154 @@ void reset_api_key_for_testing() {
         api_key = NULL;
     }
     AI_DEBUG("API key reset for testing");
+}
+
+// Built-in command to get fix suggestions for the last command
+int fix_command(int argc, char **argv) {
+    // Suppress unused parameter warnings
+    (void)argc;
+    (void)argv;
+    
+    // Import command history
+    extern CommandHistory cmd_history;
+    
+    // Check if we have a last command
+    if (!cmd_history.last_command || strlen(cmd_history.last_command) == 0) {
+        printf("No previous command to fix.\n");
+        return 1;
+    }
+    
+    // Check if we have API key
+    if (!has_api_key()) {
+        printf("No OpenAI API key found. Please set one with: set-api-key YOUR_API_KEY\n");
+        return 1;
+    }
+    
+    printf("Analyzing: %s\n", cmd_history.last_command);
+    if (cmd_history.has_error) {
+        printf("Exit status: %d\n", cmd_history.exit_status);
+    }
+    
+    // If there's no error output but we have a non-zero exit status, use a generic message
+    const char *error_text = cmd_history.last_output && strlen(cmd_history.last_output) > 0 ? 
+                             cmd_history.last_output : "Command failed with no output";
+    
+    // Get fix suggestion
+    char *result = suggest_fix(cmd_history.last_command, error_text, cmd_history.exit_status);
+    
+    if (result) {
+        printf("\n%s\n\n", result);
+        
+        // Skip interactive prompt in testing mode
+        if (getenv("NUTSHELL_TESTING")) {
+            free(result);
+            return 0;
+        }
+        
+        // Create a copy of the result for parsing
+        char *result_copy = strdup(result);
+        if (!result_copy) {
+            free(result);
+            return 1;
+        }
+        
+        // Extract command from the suggestion
+        char *suggested_cmd = NULL;
+        char *lines[100] = {0};  // Increased max lines to 100
+        int line_count = 0;
+        
+        // Split the result into lines
+        char *line = strtok(result_copy, "\n");
+        while (line && line_count < 100) {
+            lines[line_count++] = line;
+            line = strtok(NULL, "\n");
+        }
+        
+        // Try to find a code block with a command
+        bool in_code_block = false;
+        char *code_block_content = NULL;
+        
+        AI_DEBUG("Searching for command in AI response with %d lines", line_count);
+        
+        for (int i = 0; i < line_count; i++) {
+            AI_DEBUG("Line %d: %s", i, lines[i]);
+            
+            // Check for code block markers (with or without language specifier)
+            if (strncmp(lines[i], "```", 3) == 0) {
+                if (!in_code_block) {
+                    // Start of code block - skip this line
+                    in_code_block = true;
+                    AI_DEBUG("Code block starts at line %d", i);
+                } else {
+                    // End of code block
+                    in_code_block = false;
+                    AI_DEBUG("Code block ends at line %d", i);
+                }
+                continue;
+            }
+            
+            // If we're in a code block, check for actual command content
+            if (in_code_block) {
+                // Skip empty lines or comments
+                if (strlen(lines[i]) == 0 || lines[i][0] == '#') {
+                    continue;
+                }
+                
+                // Found code within a code block
+                code_block_content = lines[i];
+                AI_DEBUG("Found command in code block: %s", code_block_content);
+                break;
+            }
+            
+            // Look for lines after "Corrected command:" pattern
+            if (strstr(lines[i], "Corrected command:") != NULL && i + 1 < line_count) {
+                // The next line is likely our command
+                // Skip to the next line that's not empty and doesn't start with ```
+                for (int j = i + 1; j < line_count; j++) {
+                    if (strlen(lines[j]) == 0 || strncmp(lines[j], "```", 3) == 0) {
+                        continue;
+                    }
+                    suggested_cmd = lines[j];
+                    AI_DEBUG("Found command after 'Corrected command:' pattern: %s", suggested_cmd);
+                    break;
+                }
+                if (suggested_cmd) {
+                    break;
+                }
+            }
+        }
+        
+        // If we found a likely command, ask if user wants to execute it
+        if (code_block_content) {
+            suggested_cmd = code_block_content;
+        }
+        
+        if (suggested_cmd) {
+            printf("Would you like to execute: %s ? (y/n): ", suggested_cmd);
+            char response[10] = {0};
+            if (fgets(response, sizeof(response), stdin)) {
+                if (response[0] == 'y' || response[0] == 'Y') {
+                    // Create a temporary script and execute it
+                    char temp_script[1024];
+                    snprintf(temp_script, sizeof(temp_script), "%s/.nutshell/temp_fix.sh", getenv("HOME"));
+                    FILE *fp = fopen(temp_script, "w");
+                    if (fp) {
+                        fprintf(fp, "#!/bin/bash\n%s\n", suggested_cmd);
+                        fclose(fp);
+                        chmod(temp_script, 0700);
+                        system(temp_script);
+                        // Clean up
+                        unlink(temp_script);
+                    }
+                }
+            }
+        }
+        
+        free(result_copy);
+        free(result);
+    } else {
+        printf("Failed to get a fix suggestion.\n");
+    }
+    
+    return 0;
 }

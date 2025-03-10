@@ -1,36 +1,4 @@
-```bash
-nutshell/
-├── src/
-│   ├── core/
-│   │   ├── shell.c          # Main shell loop
-│   │   ├── parser.c         # Command parsing
-│   │   └── executor.c       # Command execution
-│   ├── ai/
-│   │   ├── openai.c         # OpenAI integration
-│   │   └── local_ml.c       # On-device ML
-│   ├── pkg/
-│   │   ├── nutpkg.c         # Package manager core
-│   │   └── registry.c       # Package registry handling
-│   ├── utils/
-│   │   ├── security.c       # Security features
-│   │   ├── autocomplete.c   # Tab completion
-│   │   └── helpers.c        # Utility functions
-│   └── plugins/             # Loadable plugins
-├── include/
-│   ├── nutshell/
-│   │   ├── core.h
-│   │   ├── ai.h
-│   │   ├── pkg.h
-│   │   └── utils.h
-├── lib/                     # 3rd party libs
-├── scripts/                 # Build/install scripts
-├── packages/                # Local package cache
-├── tests/                   # Test suite
-├── Makefile
-└── README.md
-```
-
-# Nutshell
+# Nutshell 🥜
 
 Nutshell is an enhanced Unix shell that provides a simplified command language, package management, and AI-powered assistance.
 
@@ -93,7 +61,7 @@ Nutshell command | Unix equivalent | Description
 
 Commands work just like in a standard Unix shell:
 
-```
+```bash
 🥜 ~/projects ➜ peekaboo -la
 🥜 ~/projects ➜ hop nutshell
 🥜 ~/projects/nutshell ➜ command arg1 arg2
@@ -107,7 +75,7 @@ Nutshell includes AI features to help with shell commands:
 
 1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/)
 2. Set your API key:
-   ```
+   ```bash
    🥜 ~ ➜ set-api-key YOUR_API_KEY
    ```
    
@@ -122,7 +90,7 @@ Nutshell includes AI features to help with shell commands:
 
 Convert natural language to shell commands:
 
-```
+```bash
 🥜 ~ ➜ ask find all PDF files modified in the last week
 ```
 
@@ -132,9 +100,20 @@ The shell will return the proper command and ask if you want to execute it.
 
 Get explanations for complex commands:
 
-```
+```bash
 🥜 ~ ➜ explain find . -name "*.txt" -mtime -7 -exec grep -l "important" {} \;
 ```
+
+#### Fix commands
+
+Automatically fix common command errors:
+
+```bash
+🥜 ~ ➜ torch apple.txt
+🥜 ~ ➜ fix # Will suggest to use touch apple.txt instead.
+```
+
+The shell will suggest corrections for common mistakes and ask if you want to apply them.
 
 ### Debug Options
 
@@ -307,6 +286,42 @@ Generate a checksum for your package with:
 make test       # Run all tests
 make test-pkg   # Test package installation
 make test-ai    # Test AI integration
+```
+
+## Contributing
+
+Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTING.md) before submitting a pull request.
+
+```bash
+nutshell/
+├── src/
+│   ├── core/
+│   │   ├── shell.c          # Main shell loop
+│   │   ├── parser.c         # Command parsing
+│   │   └── executor.c       # Command execution
+│   ├── ai/
+│   │   ├── openai.c         # OpenAI integration
+│   │   └── local_ml.c       # On-device ML
+│   ├── pkg/
+│   │   ├── nutpkg.c         # Package manager core
+│   │   └── registry.c       # Package registry handling
+│   ├── utils/
+│   │   ├── security.c       # Security features
+│   │   ├── autocomplete.c   # Tab completion
+│   │   └── helpers.c        # Utility functions
+│   └── plugins/             # Loadable plugins
+├── include/
+│   ├── nutshell/
+│   │   ├── core.h
+│   │   ├── ai.h
+│   │   ├── pkg.h
+│   │   └── utils.h
+├── lib/                     # 3rd party libs
+├── scripts/                 # Build/install scripts
+├── packages/                # Local package cache
+├── tests/                   # Test suite
+├── Makefile
+└── README.md
 ```
 
 ## License

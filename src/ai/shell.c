@@ -15,6 +15,7 @@
 extern int set_api_key_command(int argc, char **argv);
 extern int ask_ai_command(int argc, char **argv);
 extern int explain_command(int argc, char **argv);
+extern int fix_command(int argc, char **argv);  // Add the new command
 
 // Register AI commands with the shell
 void register_ai_commands() {
@@ -24,6 +25,7 @@ void register_ai_commands() {
     register_command("set-api-key", "set-api-key", true);
     register_command("ask", "ask", true);
     register_command("explain", "explain", true);
+    register_command("fix", "fix", true);  // Register the new command
     
     AI_SHELL_DEBUG("AI commands registered successfully");
 }
@@ -76,6 +78,15 @@ bool handle_ai_command(ParsedCommand *cmd) {
         while (cmd->args[argc]) argc++;
         bool result = explain_command(argc, cmd->args) == 0;
         AI_SHELL_DEBUG("explain command %s", result ? "succeeded" : "failed");
+        return result;
+    }
+    else if (strcmp(cmd->args[0], "fix") == 0) {  // Add handling for the new command
+        AI_SHELL_DEBUG("Handling fix command");
+        // Count arguments
+        int argc = 0;
+        while (cmd->args[argc]) argc++;
+        bool result = fix_command(argc, cmd->args) == 0;
+        AI_SHELL_DEBUG("fix command %s", result ? "succeeded" : "failed");
         return result;
     }
     

@@ -32,6 +32,17 @@ typedef struct ParsedCommand {
     bool background;
 } ParsedCommand;
 
+// Command history tracking
+typedef struct CommandHistory {
+    char *last_command;
+    char *last_output;
+    int exit_status;
+    bool has_error;
+} CommandHistory;
+
+// Global command history for error fixing
+extern CommandHistory cmd_history;
+
 // Registry functions
 void init_registry();
 void register_command(const char *unix_cmd, const char *nut_cmd, bool is_builtin);

@@ -2,6 +2,7 @@
 #define NUTSHELL_AI_H
 
 #include <stdbool.h>
+#include <nutshell/core.h> // Add this to get ParsedCommand definition
 
 // Initialize AI integration
 bool init_ai_integration();
@@ -14,6 +15,15 @@ char *explain_command_ai(const char *command);
 
 // Get command suggestions based on context
 char *suggest_commands(const char *context);
+
+// Get fix suggestion for an error
+char *suggest_fix(const char *command, const char *error, int exit_status);
+
+// Handle AI commands in the shell
+bool handle_ai_command(ParsedCommand *cmd);
+
+// Initialize AI shell integration
+void init_ai_shell();
 
 // Cleanup AI resources
 void cleanup_ai_integration();
