@@ -12,7 +12,7 @@
   },
   "prompt": {
     "left": {
-      "format": "{primary}{icon} {directory}{reset}",
+      "format": "{primary}{icon} {directory} {git_branch}{reset}",
       "icon": "🥜"
     },
     "right": {

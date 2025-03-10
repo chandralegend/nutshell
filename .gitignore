@@ -1,3 +1,5 @@
 *.o
 build/
 *.test
+*.dSYM/
+nutshell
