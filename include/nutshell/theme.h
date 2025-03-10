@@ -13,6 +13,7 @@ typedef struct {
 // Theme segment structure
 typedef struct {
     bool enabled;
+    char *key;        // Add this field to store the segment name from JSON
     char *format;
     int command_count;
     ThemeCommand **commands;  // Array of commands for this segment

@@ -46,8 +46,8 @@ Theme* create_test_theme() {
     // Directory segment
     theme->segments[0] = calloc(1, sizeof(ThemeSegment));
     theme->segments[0]->enabled = true;
+    theme->segments[0]->key = strdup("directory");  // Add this line to set the segment key
     theme->segments[0]->format = strdup("{directory}");
-    
     // New format with multiple commands
     theme->segments[0]->command_count = 1;
     theme->segments[0]->commands = calloc(2, sizeof(ThemeCommand*)); // +1 for NULL terminator
@@ -61,6 +61,7 @@ Theme* create_test_theme() {
     theme->segments[1] = calloc(1, sizeof(ThemeSegment));
     theme->segments[1]->enabled = true;
     // Use git_info as the segment key to match prompt format
+    theme->segments[1]->key = strdup("git_info");  // Set key to match prompt format
     theme->segments[1]->format = strdup("{secondary}git:({branch}){dirty_flag}{reset}");
     
     theme->segments[1]->command_count = 2;
@@ -271,7 +272,8 @@ int test_segment_commands() {
     printf("DEBUG: Theme segment count: %d\n", theme->segment_count);
     printf("DEBUG: Left prompt format: '%s'\n", theme->left_prompt->format);
     for (int i = 0; i < theme->segment_count; i++) {
-        printf("DEBUG: Segment %d format: '%s'\n", i, theme->segments[i]->format);
+        printf("DEBUG: Segment %d key: '%s', format: '%s'\n", i, 
+            theme->segments[i]->key, theme->segments[i]->format);
     }
     
     // Test executing commands for a segment

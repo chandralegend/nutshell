@@ -333,6 +333,10 @@ Theme *load_theme(const char *theme_name) {
                 ThemeSegment *segment = calloc(1, sizeof(ThemeSegment));
                 if (!segment) continue;
                 
+                // Store the segment key from JSON directly
+                segment->key = strdup(key);
+                THEME_DEBUG("Loading segment with key: %s", segment->key);
+                
                 json_t *enabled = json_object_get(value, "enabled");
                 json_t *format = json_object_get(value, "format");
                 
@@ -443,6 +447,7 @@ void free_theme(Theme *theme) {
     free(theme->prompt_symbol_color);
     
     for (int i = 0; i < theme->segment_count; i++) {
+        free(theme->segments[i]->key);  // Free the segment key
         free(theme->segments[i]->format);
         
         // Free all commands in the segment
@@ -543,194 +548,97 @@ char *get_theme_prompt(Theme *theme) {
     left_prompt = str_replace(temp, "{success}", theme->colors->success);
     free(temp);
     
-    // Process all segments in the prompt
+    // Extract all segment placeholders from the prompt format
+    THEME_DEBUG("Extracting segments from prompt format");
+    
+    // Process all segments in the theme definition
     for (int i = 0; i < theme->segment_count; i++) {
         ThemeSegment *segment = theme->segments[i];
-        if (!segment || !segment->enabled) continue;
+        if (!segment || !segment->enabled || !segment->key) continue;
         
-        THEME_DEBUG("Processing segment %d: format = '%s'", i, segment->format);
+        // Create the placeholder from the segment key that was stored during load
+        char placeholder[256];
+        snprintf(placeholder, sizeof(placeholder), "{%s}", segment->key);
+        THEME_DEBUG("Checking for placeholder: %s", placeholder);
         
-        // Extract the segment key from the segment name/key in the JSON file
-        // instead of trying to extract it from the format string
-        char *segment_key = NULL;
-        
-        // In our JSON format, the segment key is the name used in the segments object
-        // This is stored in the JSON object's key but we don't have direct access here
-        // So we extract it from the left_prompt->format and look for a matching segment
-        
-        // First check if this is a well-known segment
-        if (i == 0 && strstr(segment->format, "{directory}")) {
-            segment_key = strdup("directory");
-        } else if (i == 1 && strstr(segment->format, "git:({branch})")) {
-            segment_key = strdup("git_info"); // Match the key used in the prompt format
-        } else {
-            // For other segments, try to infer from format but skip color codes
-            const char *colors[] = {"primary", "secondary", "success", "error", "warning", "info", "reset"};
-            const char *format_str = segment->format;
-            const char *key_start = NULL;
-            const char *key_end = NULL;
+        // Only process if the placeholder exists in the prompt
+        if (strstr(left_prompt, placeholder)) {
+            THEME_DEBUG("Processing segment: %s", segment->key);
             
-            // Find the first bracketed token that is not a color code
-            const char *pos = format_str;
-            while ((pos = strchr(pos, '{')) != NULL) {
-                // Extract potential key
-                const char *end = strchr(pos, '}');
-                if (!end) break;
+            // Execute all commands for this segment to get live data
+            execute_segment_commands(segment);
+            
+            // Create formatted segment with all replaced values
+            char *formatted_segment = strdup(segment->format);
+            if (!formatted_segment) continue;
+            
+            // Replace color codes first
+            char *temp;
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{primary}", theme->colors->primary);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{secondary}", theme->colors->secondary);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{reset}", theme->colors->reset);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{info}", theme->colors->info);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{warning}", theme->colors->warning);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{error}", theme->colors->error);
+            free(temp);
+            
+            temp = formatted_segment;
+            formatted_segment = str_replace(temp, "{success}", theme->colors->success);
+            free(temp);
+            
+            // Replace command outputs in the segment format
+            bool has_output = false;
+            for (int j = 0; j < segment->command_count; j++) {
+                ThemeCommand *cmd = segment->commands[j];
+                if (!cmd || !cmd->name || !cmd->output) continue;
                 
-                // Check if it's a color code
-                bool is_color = false;
-                // Fix sign comparison using size_t for array index
-                for (size_t c = 0; c < sizeof(colors)/sizeof(colors[0]); c++) {
-                    size_t len = strlen(colors[c]);
-                    // Fix by casting to size_t for comparison
-                    if ((size_t)(end - pos - 1) == len && strncmp(pos + 1, colors[c], len) == 0) {
-                        is_color = true;
-                        break;
-                    }
-                }
+                THEME_DEBUG("Command %s output: %s", cmd->name, cmd->output);
                 
-                if (!is_color) {
-                    // Found a non-color token
-                    key_start = pos;
-                    key_end = end;
-                    break;
-                }
+                // Replace {command_name} with its output
+                char cmd_placeholder[256];
+                snprintf(cmd_placeholder, sizeof(cmd_placeholder), "{%s}", cmd->name);
                 
-                pos = end + 1; // Move past this color code
+                temp = formatted_segment;
+                formatted_segment = str_replace(temp, cmd_placeholder, cmd->output);
+                free(temp);
+                
+                has_output = true;
             }
             
-            // Extract the key name
-            if (key_start && key_end && key_end > key_start) {
-                int key_len = key_end - key_start - 1;
-                segment_key = malloc(key_len + 1);
-                if (segment_key) {
-                    strncpy(segment_key, key_start + 1, key_len);
-                    segment_key[key_len] = '\0';
-                }
-            }
-            
-            // Fallback - use segment index if we couldn't find a key
-            if (!segment_key) {
-                segment_key = malloc(20);
-                if (segment_key) {
-                    sprintf(segment_key, "segment_%d", i);
-                }
-            }
-        }
-        
-        THEME_DEBUG("Using segment key: '%s'", segment_key ? segment_key : "NULL");
-        
-        // Only proceed if we have a segment key
-        if (segment_key) {
-            // Check if this segment is referenced in the prompt
-            char placeholder[256];
-            snprintf(placeholder, sizeof(placeholder), "{%s}", segment_key);
-            
-            THEME_DEBUG("Looking for placeholder '%s' in prompt: '%s'", placeholder, left_prompt);
-            
-            // Continue with existing processing...
-            if (strstr(left_prompt, placeholder)) {
-                THEME_DEBUG("Found placeholder %s in prompt", placeholder);
+            // Only replace in the prompt if there's actual content
+            if (has_output) {
+                THEME_DEBUG("Replacing placeholder %s with: %s", placeholder, formatted_segment);
                 
-                // Execute all commands for this segment
-                execute_segment_commands(segment);
-                
-                // Create formatted segment with all replaced values
-                char *formatted_segment = strdup(segment->format);
-                if (!formatted_segment) {
-                    free(segment_key);
-                    continue;
-                }
-                
-                // Replace color codes
-                char *temp;
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{primary}", theme->colors->primary);
+                temp = left_prompt;
+                left_prompt = str_replace(temp, placeholder, formatted_segment);
                 free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{secondary}", theme->colors->secondary);
-                free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{reset}", theme->colors->reset);
-                free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{info}", theme->colors->info);
-                free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{warning}", theme->colors->warning);
-                free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{error}", theme->colors->error);
-                free(temp);
-                
-                temp = formatted_segment;
-                formatted_segment = str_replace(temp, "{success}", theme->colors->success);
-                free(temp);
-                
-                // Replace actual command outputs
-                bool has_output = false;
-                THEME_DEBUG("Command count for segment: %d", segment->command_count);
-                
-                for (int j = 0; j < segment->command_count; j++) {
-                    ThemeCommand *cmd = segment->commands[j];
-                    if (!cmd) {
-                        THEME_DEBUG("Command %d is NULL", j);
-                        continue;
-                    }
-                    
-                    THEME_DEBUG("Processing command %d: name='%s', output='%s'", 
-                               j, cmd->name ? cmd->name : "NULL", 
-                               cmd->output ? cmd->output : "NULL");
-                    
-                    if (!cmd->name || !cmd->output) continue;
-                    
-                    char cmd_placeholder[256];
-                    snprintf(cmd_placeholder, sizeof(cmd_placeholder), "{%s}", cmd->name);
-                    
-                    THEME_DEBUG("Replacing '%s' with: '%s' in format: '%s'", 
-                              cmd_placeholder, cmd->output, formatted_segment);
-                    
-                    char *temp = formatted_segment;
-                    formatted_segment = str_replace(temp, cmd_placeholder, cmd->output);
-                    free(temp);
-                    has_output = true;
-                    
-                    THEME_DEBUG("After replacement: '%s'", formatted_segment);
-                }
-                
-                // Only replace the segment if at least one command produced output
-                if (has_output) {
-                    THEME_DEBUG("Replacing placeholder '%s' in prompt with: '%s'", 
-                              placeholder, formatted_segment);
-                    
-                    char *temp = left_prompt;
-                    left_prompt = str_replace(temp, placeholder, formatted_segment);
-                    free(temp);
-                    
-                    THEME_DEBUG("Prompt after replacement: '%s'", left_prompt);
-                } else {
-                    // If no command produced output, remove the segment
-                    THEME_DEBUG("No command output, removing placeholder '%s'", placeholder);
-                    
-                    char *temp = left_prompt;
-                    left_prompt = str_replace(temp, placeholder, "");
-                    free(temp);
-                }
-                
-                free(formatted_segment);
             } else {
-                THEME_DEBUG("Placeholder '%s' NOT found in prompt", placeholder);
+                // Otherwise remove the placeholder
+                temp = left_prompt;
+                left_prompt = str_replace(temp, placeholder, "");
+                free(temp);
             }
             
-            free(segment_key);
+            free(formatted_segment);
         }
     }
-    
+
     // Append the prompt symbol if it's not already in the format
     if (!strstr(theme->left_prompt->format, "{prompt_symbol}")) {
         char *prompt_color = NULL;
