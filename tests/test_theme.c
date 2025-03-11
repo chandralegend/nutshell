@@ -1,6 +1,7 @@
 #include <nutshell/core.h>
 #include <nutshell/utils.h>
 #include <nutshell/theme.h>
+#include <nutshell/config.h>  // Add this include for configuration functions
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -226,9 +227,12 @@ int test_get_prompt() {
     return 0; // Add return value
 }
 
-// Test the theme command - change return type to int
+// Test the theme command - update to handle config integration
 int test_theme_command() {
     printf("Testing theme command...\n");
+    
+    // Also initialize the configuration system
+    init_config_system();
     
     // Setup
     extern Theme *current_theme;
@@ -236,26 +240,37 @@ int test_theme_command() {
     
     // Test listing themes
     char *args1[] = {"theme"};
+    printf("DEBUG: Testing 'theme' command (list themes)\n");
     int result = theme_command(1, args1);
     assert(result == 0);
     
     // Test setting theme
     char *args2[] = {"theme", "default"};
+    printf("DEBUG: Testing 'theme default' command\n");
     result = theme_command(2, args2);
     assert(result == 0);
     assert(current_theme != NULL);
+    printf("DEBUG: Current theme set to: %s\n", current_theme->name);
     assert(strcmp(current_theme->name, "default") == 0);
+    
+    // Check if theme was saved to config
+    const char *saved_theme = get_config_theme();
+    printf("DEBUG: Config saved theme: %s\n", saved_theme ? saved_theme : "NULL");
+    assert(saved_theme != NULL);
+    assert(strcmp(saved_theme, "default") == 0);
     
     // Test invalid theme
     char *args3[] = {"theme", "nonexistent_theme"};
+    printf("DEBUG: Testing 'theme nonexistent_theme' command\n");
     result = theme_command(2, args3);
     assert(result != 0); // Should fail
     
     // Cleanup
     cleanup_theme_system();
+    cleanup_config_system();
     
     printf("Theme command test passed!\n");
-    return 0; // Add return value
+    return 0;
 }
 
 // Test segment command execution and output storage
@@ -330,7 +345,8 @@ int main() {
     // Enable theme debug if NUT_DEBUG is set
     if (getenv("NUT_DEBUG")) {
         setenv("NUT_DEBUG_THEME", "1", 1);
-        printf("Theme debugging enabled\n");
+        setenv("NUT_DEBUG_CONFIG", "1", 1);
+        printf("Theme and config debugging enabled\n");
     }
     
     // Run the tests with proper return value checking

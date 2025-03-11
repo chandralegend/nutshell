@@ -4,6 +4,7 @@
 #include <nutshell/utils.h>
 #include <nutshell/theme.h>
 #include <nutshell/ai.h>  // Add this include to access AI functions
+#include <nutshell/config.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <string.h>
@@ -59,8 +60,37 @@ void shell_loop() {
     char *input;
     struct sigaction sa;
     
+    // Initialize the configuration system first
+    if (getenv("NUT_DEBUG")) {
+        DEBUG_LOG("Initializing configuration system");
+    }
+    init_config_system();
+    
     // Initialize the theme system
+    if (getenv("NUT_DEBUG")) {
+        DEBUG_LOG("Initializing theme system");
+    }
     init_theme_system();
+    
+    // Load saved theme from config if available
+    const char *saved_theme = get_config_theme();
+    if (saved_theme && current_theme && strcmp(current_theme->name, saved_theme) != 0) {
+        if (getenv("NUT_DEBUG")) {
+            DEBUG_LOG("Loading saved theme from config: %s", saved_theme);
+        }
+        Theme *theme = load_theme(saved_theme);
+        if (theme) {
+            if (current_theme) {
+                free_theme(current_theme);
+            }
+            current_theme = theme;
+            if (getenv("NUT_DEBUG")) {
+                DEBUG_LOG("Successfully loaded saved theme: %s", theme->name);
+            }
+        } else if (getenv("NUT_DEBUG")) {
+            DEBUG_LOG("Failed to load saved theme: %s", saved_theme);
+        }
+    }
     
     // Initialize the AI shell integration
     init_ai_shell();
@@ -245,6 +275,9 @@ void shell_loop() {
     
     // Clean up theme system
     cleanup_theme_system();
+    
+    // Clean up configuration system
+    cleanup_config_system();
 }
 
 char *get_prompt() {

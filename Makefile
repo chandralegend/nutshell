@@ -40,7 +40,7 @@ TEST_SRC = $(wildcard tests/*.c)
 TEST_OBJ = $(TEST_SRC:.c=.o)
 TEST_BINS = $(TEST_SRC:.c=.test)
 
-.PHONY: all clean install install-user test test-pkg test-theme test-ai release uninstall uninstall-user
+.PHONY: all clean install install-user test test-pkg test-theme test-ai test-config release uninstall uninstall-user
 
 all: nutshell
 
@@ -115,6 +115,11 @@ test-ai: tests/test_ai_integration.test tests/test_openai_commands.test tests/te
 	@./tests/test_openai_commands.test
 	@./tests/test_ai_shell_integration.test
 	@echo "All AI tests completed!"
+
+# Add a new target for config tests
+test-config: tests/test_config.test
+	@echo "Running configuration system tests..."
+	@./tests/test_config.test
 
 # Update the test build rule to exclude main.o
 tests/%.test: tests/%.o $(filter-out src/core/main.o, $(OBJ))
