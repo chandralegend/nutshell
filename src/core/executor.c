@@ -3,6 +3,7 @@
 
 #include <nutshell/core.h>
 #include <nutshell/utils.h>
+#include <nutshell/config.h>  // Add this include for reload_directory_config
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -71,7 +72,12 @@ void execute_command(ParsedCommand *cmd) {
 
     // Handle builtin commands without forking
     if (strcmp(cmd->args[0], "cd") == 0) {
-        if (cmd->args[1]) chdir(cmd->args[1]);
+        if (cmd->args[1]) {
+            if (chdir(cmd->args[1]) == 0) {
+                // Successfully changed directory, reload directory-specific config
+                reload_directory_config();
+            }
+        }
         return;
     }
      

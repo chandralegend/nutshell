@@ -222,6 +222,40 @@ This will switch to the "minimal" theme.
 
 3. Switch to your theme with `theme mytheme`
 
+## Directory-level Configuration
+
+Nutshell now supports project-specific configurations through directory-level config files:
+
+### How it works
+
+- Nutshell searches for a `.nutshell.json` configuration file in the current directory
+- If not found, it looks in parent directories until reaching your home directory
+- Directory configs take precedence over user configs which take precedence over system configs
+- Configurations are automatically reloaded when you change directories using `cd`
+
+### Creating a directory config
+
+Create a `.nutshell.json` file in your project directory:
+
+```json
+{
+  "theme": "minimal",
+  "aliases": {
+    "build": "make all",
+    "test": "make test",
+    "deploy": "scripts/deploy.sh"
+  },
+  "packages": ["gitify"]
+}
+```
+
+### Benefits
+
+- Project-specific aliases and settings
+- Different themes for different projects
+- Shared configurations for team projects (add `.nutshell.json` to version control)
+- Hierarchical configuration (team settings in parent dir, personal tweaks in subdirs)
+
 ## Debugging
 
 For development or troubleshooting, run the debug script:

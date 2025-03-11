@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>  // Add this include for struct stat, stat() function, and S_ISREG macro
+#include <nutshell/config.h>
 
 // Add this helper macro at the top of the file
 #define THEME_DEBUG(fmt, ...) \
@@ -923,6 +924,13 @@ int theme_command(int argc, char **argv) {
     if (!current_theme) {
         fprintf(stderr, "Failed to load theme: %s\n", theme_name);
         return 1;
+    }
+    
+    // Save theme selection to configuration
+    if (set_config_theme(theme_name)) {
+        THEME_DEBUG("Theme selection saved to config");
+    } else {
+        THEME_DEBUG("Failed to save theme selection to config");
     }
     
     printf("Theme changed to: %s\n", theme_name);
