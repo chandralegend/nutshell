@@ -33,6 +33,16 @@ make
 
 ### Installing 
 
+#### Via Homebrew (macOS & Linux)
+```bash
+# If using the formula directly
+brew install --build-from-source ./nutshell.rb
+
+# If using the tap (Note: This tap is not yet available)
+brew tap chandralegend/nutshell
+brew install nutshell
+```
+
 #### System-wide installation (requires sudo)
 ```bash
 sudo make install
