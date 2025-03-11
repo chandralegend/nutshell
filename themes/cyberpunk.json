@@ -1,0 +1,68 @@
+{
+  "name": "cyberpunk",
+  "description": "A multiline cyberpunk-themed prompt with neon colors and futuristic design",
+  "colors": {
+    "reset": "\u001b[0m",
+    "primary": "\u001b[1;38;5;123m",
+    "secondary": "\u001b[1;38;5;205m",
+    "error": "\u001b[1;38;5;196m",
+    "warning": "\u001b[1;38;5;220m",
+    "info": "\u001b[1;38;5;51m",
+    "success": "\u001b[1;38;5;118m",
+    "black": "\u001b[38;5;16m",
+    "gray": "\u001b[38;5;240m"
+  },
+  "prompt": {
+    "left": {
+      "format": "{primary}┌─[{secondary}サイバー{primary}]─[{info}{directory}{primary}]─[{secondary}{time}{primary}]{git_branch}\n{primary}└─({username}@{hostname}){primary} {icon} {reset}",
+      "icon": "Ψ"
+    },
+    "right": {
+      "format": ""
+    },
+    "multiline": true,
+    "prompt_symbol": "→",
+    "prompt_symbol_color": "secondary"
+  },
+  "segments": {
+    "git_branch": {
+      "enabled": true,
+      "format": "{primary}─[{warning}git:({branch}){dirty_flag}{primary}]",
+      "commands": {
+        "branch": "git branch --show-current 2>/dev/null",
+        "dirty_flag": "git status --porcelain 2>/dev/null | awk '{print \"*\"; exit}'"
+      }
+    },
+    "git_branch_formatted": {
+      "enabled": true,
+      "format": "{output}",
+      "commands": {
+        "output": "git branch --show-current 2>/dev/null | awk '{if ($0) print \"{primary}─[{warning}git:(\"{$0}\"){primary}]\";}'"
+      }
+    },
+    "directory": {
+      "format": "{directory}",
+      "commands": {
+        "directory": "pwd | sed \"s|$HOME|~|\""
+      }
+    },
+    "username": {
+      "format": "{username}",
+      "commands": {
+        "username": "whoami"
+      }
+    },
+    "hostname": {
+      "format": "{hostname}",
+      "commands": {
+        "hostname": "hostname -s"
+      }
+    },
+    "time": {
+      "format": "{time}",
+      "commands": {
+        "time": "date +\"%H:%M:%S\""
+      }
+    }
+  }
+}
