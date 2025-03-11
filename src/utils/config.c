@@ -10,6 +10,9 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <limits.h>  // For PATH_MAX constant
+#include <libgen.h>  // For dirname function
+#include <errno.h>   // Add this include for errno
 
 // Configuration debug macro
 #define CONFIG_DEBUG(fmt, ...) \
@@ -219,39 +222,203 @@ static bool load_config_from_file(const char *path) {
     return true;
 }
 
-// Load configuration from files (directory, user, system)
-bool load_config_files() {  // Renamed function
+// Check up the directory tree for config files
+static bool find_directory_config(char *result_path, size_t max_size) {
+    char current_dir[PATH_MAX] = {0};
+    char config_path[PATH_MAX] = {0};
+    
+    // Get the absolute path of the current directory
+    if (!getcwd(current_dir, sizeof(current_dir))) {
+        CONFIG_DEBUG("Failed to get current directory");
+        return false;
+    }
+    
+    CONFIG_DEBUG("Searching for directory config starting from: %s", current_dir);
+    CONFIG_DEBUG("Looking for file named: %s", DIR_CONFIG_FILE);
+    
+    // Start from the current directory and go up until root
+    char *dir_path = strdup(current_dir);
+    if (!dir_path) {
+        CONFIG_DEBUG("Failed to allocate memory for dir_path");
+        return false;
+    }
+    
+    while (dir_path && strlen(dir_path) > 0) {
+        // Create the config file path
+        snprintf(config_path, sizeof(config_path), "%s/%s", dir_path, DIR_CONFIG_FILE);
+        CONFIG_DEBUG("Checking for config at: %s", config_path);
+        
+        // Check if config file exists
+        if (access(config_path, R_OK) == 0) {
+            CONFIG_DEBUG("Found directory config at: %s", config_path);
+            
+            // Check if we can actually open and read the file
+            FILE *check = fopen(config_path, "r");
+            if (check) {
+                char buffer[256];
+                size_t bytes_read = fread(buffer, 1, sizeof(buffer) - 1, check);
+                buffer[bytes_read] = '\0';
+                fclose(check);
+                CONFIG_DEBUG("First %zu bytes of config: %.100s...", bytes_read, buffer);
+            } else {
+                CONFIG_DEBUG("WARNING: Found config but cannot open for reading: %s", strerror(errno));
+            }
+            
+            strncpy(result_path, config_path, max_size);
+            free(dir_path);
+            return true;
+        } else {
+            CONFIG_DEBUG("Config file not found at: %s (%s)", config_path, strerror(errno));
+        }
+        
+        // Go up one directory level - completely rewritten to avoid memory issues
+        char *parent_dir = strdup(dir_path);
+        if (!parent_dir) {
+            CONFIG_DEBUG("Failed to allocate memory for parent_dir");
+            free(dir_path);
+            return false;
+        }
+        
+        // Use dirname() on the copy
+        char *dirname_result = dirname(parent_dir);
+        
+        // If we've reached the root directory
+        if (strcmp(dir_path, dirname_result) == 0 || 
+            strcmp(dirname_result, "/") == 0) {
+            CONFIG_DEBUG("Reached root directory or can't go up further");
+            free(parent_dir);
+            free(dir_path);
+            return false;
+        }
+        
+        // Replace current path with parent
+        free(dir_path);
+        dir_path = strdup(dirname_result);
+        free(parent_dir);
+        
+        if (!dir_path) {
+            CONFIG_DEBUG("Failed to allocate memory for new dir_path");
+            return false;
+        }
+    }
+    
+    CONFIG_DEBUG("No directory config found in path");
+    if (dir_path) {
+        free(dir_path);
+    }
+    return false;
+}
+
+// Load configuration from files with improved directory hierarchy search
+bool load_config_files() {
     bool loaded_any = false;
     
-    // Check for directory-specific config first
-    char dir_config[512];
-    getcwd(dir_config, sizeof(dir_config));
-    strcat(dir_config, "/");
-    strcat(dir_config, DIR_CONFIG_FILE);
+    // Track which configuration sources were loaded
+    bool dir_loaded = false;
+    bool user_loaded = false;
+    bool system_loaded = false;
     
-    if (load_config_from_file(dir_config)) {
-        CONFIG_DEBUG("Loaded directory-specific config");
+    // Load in reverse precedence order: system (lowest) -> user -> directory (highest)
+    
+    // Check for system config first (lowest precedence)
+    if (load_config_from_file(SYSTEM_CONFIG_FILE)) {
+        CONFIG_DEBUG("Loaded system config from: %s", SYSTEM_CONFIG_FILE);
+        system_loaded = true;
         loaded_any = true;
     }
     
-    // Check for user config
+    // Check for user config next (medium precedence)
     char user_config[512];
     char *home = getenv("HOME");
     if (home) {
         snprintf(user_config, sizeof(user_config), "%s%s", home, USER_CONFIG_FILE);
         if (load_config_from_file(user_config)) {
-            CONFIG_DEBUG("Loaded user config");
+            CONFIG_DEBUG("Loaded user config from: %s", user_config);
+            user_loaded = true;
             loaded_any = true;
         }
     }
     
-    // Check for system config
-    if (load_config_from_file(SYSTEM_CONFIG_FILE)) {
-        CONFIG_DEBUG("Loaded system config");
-        loaded_any = true;
+    // Finally, try to find directory-specific config (highest precedence)
+    char dir_config_path[PATH_MAX] = {0};
+    if (find_directory_config(dir_config_path, sizeof(dir_config_path))) {
+        if (load_config_from_file(dir_config_path)) {
+            CONFIG_DEBUG("Loaded directory-specific config from: %s", dir_config_path);
+            dir_loaded = true;
+            loaded_any = true;
+            
+            // Store the directory where we found the config
+            if (global_config) {
+                char *dir_name = strdup(dirname(dir_config_path));
+                CONFIG_DEBUG("Setting active config directory to: %s", dir_name);
+                // Store this path for later reference
+                free(dir_name); // Free the temporary string
+            }
+        }
     }
     
+    CONFIG_DEBUG("Config loading summary: directory=%s, user=%s, system=%s",
+              dir_loaded ? "yes" : "no", 
+              user_loaded ? "yes" : "no", 
+              system_loaded ? "yes" : "no");
+              
     return loaded_any;
+}
+
+// Force reload of configuration based on current directory
+bool reload_directory_config() {
+    CONFIG_DEBUG("Reloading configuration for current directory");
+    
+    // Temporarily store current theme to preserve it if not overridden
+    char *current_theme = global_config && global_config->theme ? 
+                         strdup(global_config->theme) : NULL;
+    
+    // Clear existing configuration but don't free the struct
+    cleanup_config_values();
+    
+    // Reload configuration from files
+    bool result = load_config_files();
+    
+    // If we had a theme before and no new theme was loaded, restore it
+    if (current_theme && global_config && !global_config->theme) {
+        global_config->theme = current_theme;
+    } else {
+        free(current_theme);
+    }
+    
+    return result;
+}
+
+// Clean up only the values inside the configuration, not the struct itself
+void cleanup_config_values() {
+    if (!global_config) return;
+    
+    free(global_config->theme);
+    global_config->theme = NULL;
+    
+    for (int i = 0; i < global_config->package_count; i++) {
+        free(global_config->enabled_packages[i]);
+    }
+    free(global_config->enabled_packages);
+    global_config->enabled_packages = NULL;
+    global_config->package_count = 0;
+    
+    for (int i = 0; i < global_config->alias_count; i++) {
+        free(global_config->aliases[i]);
+        free(global_config->alias_commands[i]);
+    }
+    free(global_config->aliases);
+    free(global_config->alias_commands);
+    global_config->aliases = NULL;
+    global_config->alias_commands = NULL;
+    global_config->alias_count = 0;
+    
+    for (int i = 0; i < global_config->script_count; i++) {
+        free(global_config->scripts[i]);
+    }
+    free(global_config->scripts);
+    global_config->scripts = NULL;
+    global_config->script_count = 0;
 }
 
 // Save current configuration to user config file
