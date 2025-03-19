@@ -31,9 +31,10 @@ cd nutshell
 make
 ```
 
-### Installing 
+### Installing
 
 #### Via Homebrew (macOS & Linux)
+
 ```bash
 # If using the formula directly
 brew install --build-from-source ./nutshell.rb
@@ -44,15 +45,19 @@ brew install nutshell
 ```
 
 #### System-wide installation (requires sudo)
+
 ```bash
 sudo make install
 ```
 
 #### User-level installation
+
 ```bash
 make install-user
 ```
+
 Then add `$HOME/bin` to your PATH if it's not already there:
+
 ```bash
 echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc  # or ~/.zshrc or ~/.bash_profile
 ```
@@ -85,11 +90,13 @@ Nutshell includes AI features to help with shell commands:
 
 1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/)
 2. Set your API key:
+
    ```bash
    🥜 ~ ➜ set-api-key YOUR_API_KEY
    ```
-   
+
    Alternatively, set it as an environment variable:
+
    ```bash
    export OPENAI_API_KEY=your_api_key
    ```
@@ -303,11 +310,13 @@ NUT_DEBUG=1 NUT_DEBUG_THEME=1 NUT_DEBUG_PARSER=1 NUT_DEBUG_EXEC=1 NUT_DEBUG_REGI
 ## Creating Packages
 
 Packages are directories containing:
+
 - `manifest.json`: Package metadata
 - `[package-name].sh`: Main executable script
 - Additional files as needed
 
 Example manifest.json:
+
 ```json
 {
   "name": "mypackage",
@@ -320,6 +329,7 @@ Example manifest.json:
 ```
 
 Generate a checksum for your package with:
+
 ```bash
 ./scripts/generate_checksum.sh mypackage
 ```

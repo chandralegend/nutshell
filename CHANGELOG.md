@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.4] - 2025-03-11
 
 ### Added
+
 - Directory-level configuration with `.nutshell.json` files
 - Configuration hierarchy: directory configs override user configs which override system configs
 - Automatic config reloading when changing directories with `cd`
@@ -15,5 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for different themes per project
 
 ### Fixed
+
 - Memory leak in directory path traversal
 - Config loading order to properly respect precedence rules
