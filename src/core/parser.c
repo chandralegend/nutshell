@@ -22,20 +22,20 @@ ParsedCommand *parse_command(char *input) {
     char *input_copy = strdup(input);
     if (!input_copy) return NULL;
     
-    char *first_addres_of_input_copy = input_copy;
+    char *original_input_copy = input_copy;
     input_copy = trim_whitespace(input_copy);
     if (strlen(input_copy) == 0) {
         PARSER_DEBUG("Empty command after trimming");
-        free(first_addres_of_input_copy);
-        first_addres_of_input_copy =NULL;
+        free(original_input_copy);
+        original_input_copy = NULL;
         return NULL;
     }
     
     ParsedCommand *cmd = calloc(1, sizeof(ParsedCommand));
     if (!cmd) {
         PARSER_DEBUG("Failed to allocate ParsedCommand");
-        free(first_addres_of_input_copy);
-        first_addres_of_input_copy =NULL;
+        free(original_input_copy);
+        original_input_copy = NULL;
         return NULL;
     }
     
@@ -43,8 +43,8 @@ ParsedCommand *parse_command(char *input) {
     cmd->args = calloc(MAX_ARGS, sizeof(char *));
     if (!cmd->args) {
         PARSER_DEBUG("Failed to allocate args array");
-        free(first_addres_of_input_copy);
-        first_addres_of_input_copy = NULL;
+        free(original_input_copy);
+        original_input_copy = NULL;
         free(cmd);
         return NULL;
     }
@@ -88,9 +88,9 @@ ParsedCommand *parse_command(char *input) {
     
     PARSER_DEBUG("Command parsed with %d arguments", arg_count);
 
-    if(first_addres_of_input_copy){
-        free(first_addres_of_input_copy);
-        first_addres_of_input_copy = NULL;
+    if(original_input_copy){
+        free(original_input_copy);
+        original_input_copy = NULL;
     }
 
 
